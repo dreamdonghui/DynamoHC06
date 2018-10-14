@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">测力环手机版</string>
+    <string name="buttonZero">清零</string>
+    <string name="textViewDynamometerDisplay">0.00N</string>
+    <string name="textviewMSG">准备就绪</string>
+    <string name="textview">TextView</string>
+    <string name="通道">通道</string>
+</resources>
