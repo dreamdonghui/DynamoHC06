@@ -17,6 +17,9 @@ import android.widget.TextView;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
 
@@ -34,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
     int             readBufferPosition;
     //int             counter;
     volatile    boolean stopworker;
+    Boolean     connected = false;
     TextView    textViewMessage;
     TextView    textViewDynamometerDisplay;
 
@@ -46,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
 
         Button buttonConect = findViewById(R.id.buttonConect);
         Button buttonZero   = findViewById(R.id.buttonZero);
-        textViewMessage = findViewById(R.id.textViewMessage);
+
         textViewDynamometerDisplay = findViewById(R.id.textViewDynamometerDisplay);
 
 
@@ -54,78 +58,26 @@ public class MainActivity extends AppCompatActivity {
         buttonConect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (connected)return;
                try
                 {
                     findBT();
                     openBT();
-                    sendData("aa 00 aa 0d");
+//                    sendData("a5 80 07 2c 5a");
+                    sendData("aa 87 31 0d");
                 }
                catch (IOException  ex) {
-                   textViewMessage.setText("蓝牙设置有误！");
+//                   textViewMessage.setText("蓝牙设置有误！");
                }
             }
         });
-
-        // Send and close example. Not used at this moment.
-
-        ////Send Button
-
-        //sendButton.setOnClickListener(new View.OnClickListener()
-
-        //{
-
-        //public void onClick(View v)
-
-        //{
-
-        //try
-
-        //{
-
-        //sendData();
-
-        //}
-
-        //catch (IOException ex) { }
-
-        //}
-
-        //});
-
-        //
-
-        ////Close button
-
-        //closeButton.setOnClickListener(new View.OnClickListener()
-
-        //{
-
-        //public void onClick(View v)
-
-        //{
-
-        //try
-
-        //{
-
-        //closeBT();
-
-        //}
-
-        //catch (IOException ex) { }
-
-        //}
-
-        //});
-
-        //
 
     }
 
     void findBT(){
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if(mBluetoothAdapter == null){
-            textViewMessage.setText("本机未发现蓝牙设备！");
+//            textViewMessage.setText("本机未发现蓝牙设备！");
         }
 
         if(!mBluetoothAdapter.isEnabled()){
@@ -134,12 +86,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         Set<BluetoothDevice> pairedDevices = mBluetoothAdapter.getBondedDevices();
-        textViewMessage.setText("设备未配置。");
+//        textViewMessage.setText("设备未配置。");
         if(pairedDevices.size() > 0) {
             for (BluetoothDevice device : pairedDevices){
-                if (device.getName().equals("JDY-30")){   //JDY-30  WXCLJ-7 SPP-CA
+                if (device.getName().equals("JMCLJ")){   //JDY-30  WXCLJ-7 SPP-CA
                     mDevice = device;
-                    textViewMessage.setText("配置列表中发现设备.");
+//                    textViewMessage.setText("配置列表中发现设备.");
                     break;
                 }
             }
@@ -151,7 +103,9 @@ public class MainActivity extends AppCompatActivity {
         mSocket = mDevice.createRfcommSocketToServiceRecord(uuid);
         try{
             mSocket.connect();
+            connected = true;
         }catch (IOException e){
+            connected = false;
             e.printStackTrace();
         }
 
@@ -160,12 +114,12 @@ public class MainActivity extends AppCompatActivity {
         mInputStream = mSocket.getInputStream();
         beginListenForDate();
 
-        textViewMessage.setText("设备链路已建立。");
+//        textViewMessage.setText("设备链路已建立。");
     }
 
     void beginListenForDate(){
         final Handler handler = new Handler();
-        final byte delimiter = 0x0d; //ASCII for new line;
+        final byte delimiter = 0x0d; //ASCII for new line is 10
 
         stopworker = false;
         readBufferPosition = 0;
@@ -186,17 +140,8 @@ public class MainActivity extends AppCompatActivity {
                                     byte[] encodeBytes = new byte[readBufferPosition];
                                     System.arraycopy(readBuffer,0,encodeBytes,0,encodeBytes.length);
 //                                    final String data = new String(encodeBytes,"US-ASCII");
-                                    StringBuilder sb = new StringBuilder("");
-                                    String sTmp="";
-                                    for (int n=0;n<encodeBytes.length;n++)
-                                    {
-                                        sTmp = Integer.toHexString(encodeBytes[n] & 0xFF);
-                                        sb.append((sTmp.length()==1)? "0"+sTmp : sTmp);
-                                        sb.append(" ");
-                                    }
-                                    final String data = sb.toString().toUpperCase().trim();;
-
                                     readBufferPosition = 0;
+                                    final String data = new String(GetdynamoValue(encodeBytes));
                                     handler.post(new Runnable() {
                                         @Override
                                         public void run() {
@@ -221,6 +166,33 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+    String GetdynamoValue( byte[] arr){
+        boolean negetive = false;
+        float floatValue;
+        String StrDynamoValue;
+        if(arr.length==5){
+                byte[] TemValue = Arrays.copyOfRange(arr,1,4);
+                byte dotPosition =arr[4];
+//                ByteBuffer bbTem = ByteBuffer.wrap(TemValue);
+//                bbTem.order(ByteOrder.LITTLE_ENDIAN);
+//                int intValue = bbTem.getInt();
+            int intValue = (TemValue[0]&0xFF)*256+(TemValue[1]&0xFF)*16+(TemValue[2]&0xFF);
+            if (intValue >= 0x800000){
+                    negetive = true;
+                    intValue = intValue/2;
+                }
+                floatValue = (float)intValue/(float)(Math.pow(10, dotPosition&0xFF));
+        }else{
+            return "0";
+        }
+        if (negetive){
+            StrDynamoValue ="-"+ Float.toString(floatValue);
+        }else {
+            StrDynamoValue =Float.toString(floatValue);
+        }
+        return StrDynamoValue+" N";
+    }
+
     void sendData(String msg) throws  IOException{
         byte[] data = msg.getBytes();
 
@@ -235,23 +207,24 @@ public class MainActivity extends AppCompatActivity {
         data = new byte[nLength];
         for (int i = 0; i < nLength; i++) {
             if (strings[i].length() != 2) {
-                data[i] = 00;
+                data[i] = 0b00;
                 continue;
             }
             try {
                 data[i] = (byte)Integer.parseInt(strings[i], 16);
             } catch (Exception e) {
-                data[i] = 00;
-                continue;
+                data[i] = 0x00;
+//                continue;
             }
         }
 
         //        msg += "\n";
         mOutputStream.write(data);
-//        Log.i(TAG,"Data Sent");
+        Log.i(TAG,"Data Sent");
     }
     void closeBT() throws IOException{
         stopworker = true;
+        connected = false;
         mOutputStream.close();
         mInputStream.close();
         mSocket.close();
