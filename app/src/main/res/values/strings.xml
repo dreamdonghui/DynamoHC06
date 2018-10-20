@@ -4,6 +4,7 @@
     <string name="textViewDynamometerDisplay">0.00N</string>
     <string name="textviewMSG">准备就绪</string>
     <string name="textview">TextView</string>
-    <string name="通道">通道</string>
-    <string name="connect">打开串口</string>
+    <string name="channel">通道选择</string>
+    <string name="connect">开始链接</string>
+    <string name="textViewDynamo">力值</string>
 </resources>

@@ -17,8 +17,7 @@ import android.widget.TextView;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
+
 import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
@@ -40,6 +39,7 @@ public class MainActivity extends AppCompatActivity {
     Boolean     connected = false;
     TextView    textViewMessage;
     TextView    textViewDynamometerDisplay;
+    Button      buttonConect;
 
 
     @Override
@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
-        Button buttonConect = findViewById(R.id.buttonConect);
+        buttonConect = findViewById(R.id.buttonConect);
         Button buttonZero   = findViewById(R.id.buttonZero);
 
         textViewDynamometerDisplay = findViewById(R.id.textViewDynamometerDisplay);
@@ -59,7 +59,8 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 if (connected)return;
-               try
+                buttonConect.setText("正在连接");
+                try
                 {
                     findBT();
                     openBT();
@@ -67,8 +68,33 @@ public class MainActivity extends AppCompatActivity {
                     sendData("aa 87 31 0d");
                 }
                catch (IOException  ex) {
-//                   textViewMessage.setText("蓝牙设置有误！");
+                   Log.i(TAG,"力值读取指令发送异常！");
                }
+            }
+        });
+
+        //Connect Button
+        buttonZero.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (!connected) return;
+                try {
+                    sendData("aa c7 71 0d");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    Log.i(TAG,"清零指令发送异常！");
+                }
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                try {
+                    sendData("aa 87 31 0d");
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
             }
         });
 
@@ -77,7 +103,7 @@ public class MainActivity extends AppCompatActivity {
     void findBT(){
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         if(mBluetoothAdapter == null){
-//            textViewMessage.setText("本机未发现蓝牙设备！");
+            Log.i(TAG,"设备未发现蓝牙适配器。");
         }
 
         if(!mBluetoothAdapter.isEnabled()){
@@ -113,7 +139,7 @@ public class MainActivity extends AppCompatActivity {
         mOutputStream = mSocket.getOutputStream();
         mInputStream = mSocket.getInputStream();
         beginListenForDate();
-
+        buttonConect.setText("连接成功");
 //        textViewMessage.setText("设备链路已建立。");
     }
 
@@ -141,12 +167,16 @@ public class MainActivity extends AppCompatActivity {
                                     System.arraycopy(readBuffer,0,encodeBytes,0,encodeBytes.length);
 //                                    final String data = new String(encodeBytes,"US-ASCII");
                                     readBufferPosition = 0;
-                                    final String data = new String(GetdynamoValue(encodeBytes));
+                                    final String data = GetdynamoValue(encodeBytes);
                                     handler.post(new Runnable() {
                                         @Override
                                         public void run() {
-                                           textViewDynamometerDisplay.setText(data);
-                                            Log.i(TAG,"data received:"+data);
+                                            if (data.equals("")){
+                                                Log.i(TAG,"data received:"+data);
+                                            }else{
+                                                textViewDynamometerDisplay.setText(data);
+                                                Log.i(TAG,"data received:"+data);
+                                            }
                                         }
                                     });
                                 }
@@ -170,36 +200,46 @@ public class MainActivity extends AppCompatActivity {
         boolean negetive = false;
         float floatValue;
         String StrDynamoValue;
+        float dotWeight;
         if(arr.length==5){
                 byte[] TemValue = Arrays.copyOfRange(arr,1,4);
                 byte dotPosition =arr[4];
 //                ByteBuffer bbTem = ByteBuffer.wrap(TemValue);
 //                bbTem.order(ByteOrder.LITTLE_ENDIAN);
 //                int intValue = bbTem.getInt();
-            int intValue = (TemValue[0]&0xFF)*256+(TemValue[1]&0xFF)*16+(TemValue[2]&0xFF);
+
+            int intValue = (TemValue[0]&0xFF)*65536+(TemValue[1]&0xFF)*256+(TemValue[2]&0xFF);
             if (intValue >= 0x800000){
+                if(intValue == 0x800000){
+                   negetive = false;
+                }else{
                     negetive = true;
-                    intValue = intValue/2;
                 }
-                floatValue = (float)intValue/(float)(Math.pow(10, dotPosition&0xFF));
+                    intValue = intValue-0x800000;
+                }
+                dotWeight = (float)Math.pow(10, dotPosition&0xFF);
+                floatValue = (float)intValue/dotWeight;
         }else{
-            return "0";
+            return "";
         }
         if (negetive){
             StrDynamoValue ="-"+ Float.toString(floatValue);
         }else {
             StrDynamoValue =Float.toString(floatValue);
         }
+        if(dotWeight == 1.0){
+            StrDynamoValue = StrDynamoValue.replace(".0","");
+        }
         return StrDynamoValue+" N";
     }
 
     void sendData(String msg) throws  IOException{
         byte[] data = msg.getBytes();
+        int nLength = data.length;
 
-        if (data == null) {
+        if (nLength <= 0) {
             return;
         }
-        int nLength = data.length;
 
         String strTemString = new String(data, 0, nLength);
         String[] strings = strTemString.split(" ");
