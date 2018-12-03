@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="@color/mainbgcolor"
+    android:background="@drawable/background"
     android:keepScreenOn="true"
     tools:context=".MainActivity">
 
@@ -12,9 +12,8 @@
         android:id="@+id/textViewDynamometerDisplay"
         android:layout_width="308dp"
         android:layout_height="0dp"
-        android:layout_marginStart="168dp"
-        android:layout_marginBottom="224dp"
-        android:background="@color/colorPrimaryDark"
+        android:layout_marginStart="128dp"
+        android:layout_marginBottom="188dp"
         android:text="@string/textViewDynamometerDisplay"
         android:textAlignment="center"
         android:textColor="@android:color/white"
@@ -26,14 +25,14 @@
         android:id="@+id/buttonZero"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="12dp"
-        android:layout_marginEnd="112dp"
+        android:layout_marginTop="60dp"
+        android:layout_marginEnd="128dp"
         android:text="@string/buttonZero"
         app:layout_constraintEnd_toEndOf="@+id/textViewDynamometerDisplay"
         app:layout_constraintTop_toBottomOf="@+id/textViewDynamometerDisplay" />
 
     <Button
-        android:id="@+id/buttonConect"
+        android:id="@+id/buttonConnect"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
@@ -44,15 +43,15 @@
         app:layout_constraintEnd_toEndOf="parent" />
 
     <Spinner
-        android:id="@+id/spinner"
+        android:id="@+id/spinnerChannels"
         android:layout_width="82dp"
         android:layout_height="wrap_content"
         android:layout_marginEnd="8dp"
         android:layout_marginBottom="8dp"
         android:background="@android:color/white"
-        android:entries="@array/通道"
+        android:entries="@array/channels_array"
         android:spinnerMode="dialog"
-        app:layout_constraintBottom_toTopOf="@+id/buttonConect"
+        app:layout_constraintBottom_toTopOf="@+id/buttonConnect"
         app:layout_constraintEnd_toEndOf="parent" />
 
     <TextView
@@ -63,18 +62,29 @@
         android:text="@string/channel"
         android:textAlignment="textEnd"
         android:textColor="@android:color/white"
-        app:layout_constraintEnd_toStartOf="@+id/spinner"
-        app:layout_constraintTop_toTopOf="@+id/spinner" />
+        app:layout_constraintEnd_toStartOf="@+id/spinnerChannels"
+        app:layout_constraintTop_toTopOf="@+id/spinnerChannels" />
 
     <TextView
         android:id="@+id/textViewDynamo"
         android:layout_width="19dp"
         android:layout_height="42dp"
-        android:layout_marginTop="8dp"
-        android:layout_marginEnd="15dp"
+        android:layout_marginTop="4dp"
+        android:layout_marginEnd="68dp"
         android:text="@string/textViewDynamo"
         android:textColor="@android:color/white"
         app:layout_constraintEnd_toStartOf="@+id/textViewDynamometerDisplay"
         app:layout_constraintTop_toTopOf="@+id/textViewDynamometerDisplay" />
+
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="32dp"
+        android:layout_marginBottom="32dp"
+        android:text="@string/companyTitle"
+        android:textColor="@color/colorAccent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
 </android.support.constraint.ConstraintLayout>

@@ -11,13 +11,17 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.UUID;
@@ -37,9 +41,9 @@ public class MainActivity extends AppCompatActivity {
     //int             counter;
     volatile    boolean stopworker;
     Boolean     connected = false;
-    TextView    textViewMessage;
+//    TextView    textViewMessage;
     TextView    textViewDynamometerDisplay;
-    Button      buttonConect;
+    Button      buttonConnect;
 
 
     @Override
@@ -48,18 +52,47 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
 
-        buttonConect = findViewById(R.id.buttonConect);
+        buttonConnect = findViewById(R.id.buttonConnect);
         Button buttonZero   = findViewById(R.id.buttonZero);
 
         textViewDynamometerDisplay = findViewById(R.id.textViewDynamometerDisplay);
+        Spinner spinnerChannels = findViewById(R.id.spinnerChannels);
+// Create an ArrayAdapter using the string array and a default spinner layout
+        ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,
+                R.array.channels_array, android.R.layout.simple_spinner_item);
+// Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+// Apply the adapter to the spinner
+        spinnerChannels.setAdapter(adapter);
 
+        spinnerChannels.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+            @Override
+            public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                Log.i(TAG,"力值读取指令发送异常！"+position);
+
+
+            }
+
+            @Override
+            public void onNothingSelected(AdapterView<?> parent) {
+
+                // sometimes you need nothing here
+            }
+        });
 
         //Connect Button
-        buttonConect.setOnClickListener(new View.OnClickListener() {
+        buttonConnect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                if (connected)return;
-                buttonConect.setText("正在连接");
+                if (connected){
+                    try {
+                        closeBT();
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    return;
+                }
+                buttonConnect.setText("正在连接");
                 try
                 {
                     findBT();
@@ -84,8 +117,15 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                     Log.i(TAG,"清零指令发送异常！");
                 }
+
                 try {
-                    Thread.sleep(500);
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                try {
+                    Thread.sleep(1000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -99,6 +139,7 @@ public class MainActivity extends AppCompatActivity {
         });
 
     }
+
 
     void findBT(){
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
@@ -139,7 +180,7 @@ public class MainActivity extends AppCompatActivity {
         mOutputStream = mSocket.getOutputStream();
         mInputStream = mSocket.getInputStream();
         beginListenForDate();
-        buttonConect.setText("连接成功");
+        buttonConnect.setText("断开连接");
 //        textViewMessage.setText("设备链路已建立。");
     }
 
@@ -159,13 +200,16 @@ public class MainActivity extends AppCompatActivity {
                         int bytesAvailable = mInputStream.available();
                         if (bytesAvailable>0){
                             byte[] packetBytes = new byte[bytesAvailable];
-                            mInputStream.read(packetBytes);
+                            if(mInputStream.read(packetBytes) == 0)break;
                             for (int i=0; i<bytesAvailable;i++){
                                 byte b = packetBytes[i];
                                 if (b == delimiter){
                                     byte[] encodeBytes = new byte[readBufferPosition];
                                     System.arraycopy(readBuffer,0,encodeBytes,0,encodeBytes.length);
 //                                    final String data = new String(encodeBytes,"US-ASCII");
+                                    final String TData = new String(encodeBytes,"US-ASCII");
+                                    Log.i(TAG,"TData received:"+TData);
+
                                     readBufferPosition = 0;
                                     final String data = GetdynamoValue(encodeBytes);
                                     handler.post(new Runnable() {
@@ -197,7 +241,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     String GetdynamoValue( byte[] arr){
-        boolean negetive = false;
+        boolean negetive = true;
         float floatValue;
         String StrDynamoValue;
         float dotWeight;
@@ -212,11 +256,12 @@ public class MainActivity extends AppCompatActivity {
             if (intValue >= 0x800000){
                 if(intValue == 0x800000){
                    negetive = false;
-                }else{
-                    negetive = true;
                 }
                     intValue = intValue-0x800000;
                 }
+                else{
+                negetive = false;
+            }
                 dotWeight = (float)Math.pow(10, dotPosition&0xFF);
                 floatValue = (float)intValue/dotWeight;
         }else{
@@ -230,6 +275,7 @@ public class MainActivity extends AppCompatActivity {
         if(dotWeight == 1.0){
             StrDynamoValue = StrDynamoValue.replace(".0","");
         }
+        Log.i(TAG, Boolean.toString(negetive));
         return StrDynamoValue+" N";
     }
 
@@ -260,7 +306,7 @@ public class MainActivity extends AppCompatActivity {
 
         //        msg += "\n";
         mOutputStream.write(data);
-        Log.i(TAG,"Data Sent");
+        Log.i(TAG,"Data Sent"+ Arrays.toString(data));
     }
     void closeBT() throws IOException{
         stopworker = true;
@@ -268,6 +314,7 @@ public class MainActivity extends AppCompatActivity {
         mOutputStream.close();
         mInputStream.close();
         mSocket.close();
+        buttonConnect.setText("开始链接");
         Log.i(TAG,"Bluetooth Closed");
     }
 
