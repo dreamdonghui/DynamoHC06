@@ -37,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
 
     private String TAG ="Dong";
     byte[]          readBuffer;
+    byte    state = 0x00; //0x00 send the  ; 0x01 Get channel info; 0x02 Get value; 0x03 To zero.
     int             readBufferPosition;
     //int             counter;
     volatile    boolean stopworker;

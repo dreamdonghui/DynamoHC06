@@ -1,0 +1,87 @@
+; CH365WDM.INF
+; Driver for CH362/CH365 (PCI chip) V1.6
+; WDM/DLL for Windows 98/Me/2000/XP
+; Copyright (C) W.ch 2001-2005
+;
+
+[Version]
+Signature = "$Chicago$"
+Class     = WCH
+ClassGuid = {77989ADF-06DB-4025-92E8-40D902C03B0A}
+Provider  = %WinChipHead%
+DriverVer = 10/20/2005, 1.6.2005.10
+
+[ControlFlags]
+ExcludeFromSelect = PCI\VEN_4348&DEV_5049&REV_10
+ExcludeFromSelect = PCI\VEN_4348&DEV_5049
+
+[ClassInstall32]
+Addreg = WCHReg
+
+[ClassInstall]
+Addreg = WCHReg
+
+[WCHReg]
+HKR, , , 0, %ClassName%
+HKR, , Icon, , -5
+HKR, , NoInstallClass, , 1
+
+[Manufacturer]
+%WinChipHead% = WinChipHead
+
+[WinChipHead]
+%CH365.DeviceDesc% = CH365.Install, PCI\VEN_4348&DEV_5049&REV_10
+%CH36X.DeviceDesc% = CH365.Install, PCI\VEN_4348&DEV_5049
+
+[CH365.Install]
+CopyFiles = CH365.CopyFiles.SYS, CH365.CopyFiles.DLL
+AddReg    = CH365.9X.AddReg, CH365.AddReg
+
+[CH365.Install.NT]
+CopyFiles = CH365.CopyFiles.SYS, CH365.CopyFiles.DLL
+AddReg    = CH365.NT.AddReg, CH365.AddReg
+
+[CH365.CopyFiles.SYS]
+CH365WDM.SYS, , , 2
+
+[CH365.CopyFiles.DLL]
+CH365DLL.DLL, , , 2
+
+[CH365.9X.AddReg]
+HKR, , DevLoader, , *NTKERN
+HKR, , NTMPDriver, , CH365WDM.SYS
+
+[CH365.NT.AddReg]
+
+[CH365.AddReg]
+HKLM, SOFTWARE\WinChipHead\IC\CH365, WDM, 0x00010001, 0x00000016
+HKLM, SOFTWARE\WinChipHead\IC\CH365, DLL, 0x00010001, 0x00000016
+HKLM, SOFTWARE\WinChipHead\IC\CH365, Function, , "PCI slave"
+
+[CH365.Install.NT.Services]
+AddService = CH365, 2, CH365.Service
+
+[CH365.Service]
+DisplayName   = "CH365WDM"
+ServiceType   = 1
+StartType     = 3
+ErrorControl  = 1
+ServiceBinary = %10%\System32\Drivers\CH365WDM.SYS
+
+[DestinationDirs]
+DefaultDestDir      = 10, System32\Drivers
+CH365.CopyFiles.SYS = 10, System32\Drivers
+CH365.CopyFiles.DLL = 11
+
+[SourceDisksFiles]
+CH365WDM.SYS  = 1
+CH365DLL.DLL  = 1
+
+[SourceDisksNames]
+1 = "CH365 Installation Disk", CH365WDM.SYS, ,
+
+[Strings]
+ClassName        = "外部接口"
+WinChipHead      = "wch.cn"
+CH365.DeviceDesc = "PCI-CARD CH365"
+CH36X.DeviceDesc = "PCI-CARD CH36X"
